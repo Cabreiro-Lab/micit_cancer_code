@@ -8,6 +8,7 @@ library(readxl)
 library(glue)
 library(broom)
 library(ggrepel)
+library(ggtern)
 
 theme_set(theme_cowplot(15))
 
@@ -210,7 +211,6 @@ BW %>%
   scale_size(guide="none") +
   theme_classic() +
   theme(
-    # axis.title.y=element_blank(),
     axis.text.x=element_blank(),
     axis.ticks.x=element_blank(),
     axis.title.x = element_text(size=16, face="bold", color ='black'),
@@ -276,7 +276,6 @@ pyrE %>%
   scale_size(guide="none") +
   theme_classic() +
   theme(
-    # axis.title.y=element_blank(),
     axis.text.x=element_blank(),
     axis.ticks.x=element_blank(),
     axis.title.x = element_text(size=16, face="bold", color ='black'),
@@ -343,7 +342,6 @@ TM %>%
   scale_size(guide="none") +
   theme_classic() +
   theme(
-    # axis.title.y=element_blank(),
     axis.text.x=element_blank(),
     axis.ticks.x=element_blank(),
     axis.title.x = element_text(size=16, face="bold", color ='black'),
@@ -354,4 +352,99 @@ TM %>%
   guides(color = FALSE,
          alpha = FALSE,
          fill = guide_legend(override.aes = list(size=8)))
+
+
+
+
+# ternary plot ------------------------------------------------------------
+
+## calculate scores and join datasets 
+
+BW_scores = BW %>% 
+  drop_na(worm_score_5) %>% 
+  mutate(score = abs(log2FC_5FU - (log2FC_control - adj$slope[1])) * worm_score_5) %>% 
+  select(MetaboliteU, BW = score, wBW = worm_score_5)
+
+pyrE_scores = pyrE %>% 
+  drop_na(worm_score_5) %>% 
+  mutate(score = abs(log2FC_5FU - (log2FC_control - adj$slope[2])) * worm_score_5) %>% 
+  select(MetaboliteU, pyrE = score, wpyrE = worm_score_5)
+
+TM_scores = TM %>% 
+  drop_na(worm_score_250) %>% 
+  mutate(score = abs(log2FC_5FU - (log2FC_control - adj$slope[3])) * worm_score_250) %>% 
+  select(MetaboliteU, TM = score, wTM = worm_score_250)
+
+scores_all = BW_scores %>% 
+  left_join(pyrE_scores) %>% 
+  left_join(TM_scores)
+
+
+## find where metabolites rescue worm phenotype and annotate
+scores_all = scores_all %>% 
+  mutate(Phenotype = case_when(wTM == 4 ~ 'TM',
+                               wBW == 4 & wpyrE == 4 ~ 'BW and pyrE',
+                               wpyrE == 4 & wBW != 4 ~ 'pyrE',
+                               wpyrE != 4 & wBW == 4 ~ 'BW'))
+
+# lists of metabolites belonging to sugars and nucleotides
+sugars = c("Dulcitol", "Maltose", "Glycerol",     
+           "D-Galactose", "D-Trehalose", "D-Sorbitol")
+
+nucleotides  = c("Uridine-2',3'-cyclic-monophosphate", 
+                 "Cytidine-5'-monophosphate", "Uridine-2'-monophosphate", 
+                 "Uridine-5'-monophosphate", "Cytidine-2'-monophosphate", 
+                 "Uracil_N", "Uridine-3'-monophosphate", 
+                 "Cytidine-2',3'-cyclic monophosphate", "Cytidine_N", "Uridine", 
+                 "Cytidine-3'-monophosphate", "Thymidine", "Uridine_N")
+
+
+# plot with ggtern
+scores_all %>% 
+  mutate(EcoCyc_Classes = case_when(MetaboliteU %in% sugars ~ "Sugars",
+                                    MetaboliteU %in% nucleotides ~ "Nucleotides")) %>%
+  filter(EcoCyc_Classes %in% c('Sugars','Nucleotides')) %>%
+  ggtern(aes(pyrE,BW,TM,
+             color = EcoCyc_Classes)) +
+  stat_density_tern(geom = 'polygon',
+                    size = 0.5,
+                    bdl = 0.058,
+                    n = 100,
+                    aes(alpha=..level..,
+                        fill = EcoCyc_Classes),
+                    weight = 1,
+                    base = "ilr") + 
+  geom_point(data = scores_all, 
+             pch = 21, 
+             color = 'grey70',
+             aes(group = Phenotype, 
+                 fill = Phenotype)) +
+  scale_fill_manual(
+    values = c('#DB1D51', # red
+               '#FA4F22', # orange
+               '#FA754B',  # orange CLASS
+               '#0CEB96', # light blue
+               '#D6D613', # yellow
+               '#3D9EF0', # blue CLASS
+               '#5913F2' # dark blue
+               
+    )
+  ) +
+  scale_color_manual(
+    values = c(
+      '#FA754B', # orange
+      '#3D9EF0'  # blue
+    )
+  ) + 
+  theme_rgbw() +
+  scale_size(range = c(1, 5)) +
+  guides(alpha = "none", size = 'none') +
+  theme_nomask() +
+  labs(color = 'Rescued\nphenotype') + 
+  theme(legend.key = element_rect(fill = NA, color = NA))
+
+
+
+
+
 
