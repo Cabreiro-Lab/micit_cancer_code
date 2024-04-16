@@ -2,8 +2,6 @@
 
 library(tidyverse)
 library(cowplot)
-library(here)
-library(rstatix)
 library(readxl)
 library(glue)
 library(broom)
