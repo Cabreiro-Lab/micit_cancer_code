@@ -10,7 +10,9 @@ Coming soon...
 
 The data used in this study is available in the `data` folder. The data is organized as follows:
 
-(more to follow here)
+**KEGGEcoCycClass.csv**: List of KEGG and EcoCyc pathways and their corresponding classes for the nutrients in the Biolog plates.
+
+**ecocyc_paths.csv**: List of pathways from the EcoCyc database.
 
 ## Code
 

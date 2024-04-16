@@ -11,6 +11,9 @@ library(ggtern)
 theme_set(theme_cowplot(15))
 
 
+#  pathway enrichment and drug-glucose interaction plot -------------------
+
+
 # read data from the tables
 
 gene_drug = read_excel("data/Table S1.xlsx", sheet = "gene_nutrient_screen",
@@ -120,4 +123,41 @@ gene_drug %>%
   ) +
   scale_y_discrete(labels = scales::label_wrap(40), limits=rev) +
   theme_cowplot(17, font_family = "Arial") 
+
+
+
+
+
+
+# normalised gene scatterplot ---------------------------------------------
+
+palette <- randomcoloR::distinctColorPalette(19) 
+
+pos = position_jitter(width = 0.05, height = 0.05, seed = 1) # to plot names in jitter positions
+gene_drug %>% 
+  select(Supplement, Supplement_mM, Genes, BW_norm, Pathway) %>%
+  unite(Supp, Supplement, Supplement_mM) %>%
+  spread(Supp, BW_norm) %>%
+  distinct(Genes, Pathway, .keep_all = T) %>% 
+  ggplot(aes(x = Glucose_0, y = Glucose_10, fill = Pathway)) + 
+  geom_hline(yintercept = 0, colour = 'grey30') +
+  geom_vline(xintercept = 0, colour = 'grey30') +
+  geom_point(position = pos, size = 4, shape = 21) + 
+  geom_text_repel(aes(label = Genes), position = pos, max.overlaps = 100) +
+  labs(title = expression(paste("5FU + Glucose effect on ", italic('C. elegans'),
+                                " N2 phenotype", sep = '')),
+       x = "Normalised median scores of *C. elegans* N2 phenotype",
+       y = "Normalised median scores of *C. elegans* N2 phenotype with **Glucose**",
+       fill = "Pathway") +
+  scale_fill_manual(values = palette) +
+  theme(plot.title = element_text(size = 15, hjust = 0.5, face = "bold"),
+        panel.grid.major = element_line(colour = "grey90"),
+        panel.background = element_rect(fill = "white", colour = "grey50"),
+        legend.text = element_text(size = 9),
+        axis.title.y = ggtext::element_markdown(),
+        axis.title.x = ggtext::element_markdown()) + 
+  guides(colour = guide_legend(override.aes = list(size = 4))) 
+
+
+
 
