@@ -447,7 +447,10 @@ scores_all %>%
 
 
 
-# enrichment analysis -----------------------------------------------------
+# Enrichment analysis -----------------------------------------------------
+
+
+# Nutrient classes --------------------------------------------------------
 
 
 # prepare info about metabolite classes and pathways
@@ -492,7 +495,7 @@ sig.met.TM.down = screen_stats %>%
 
 
 
-## hypergeotric test ---------------------------------------
+## Bacterial side ---------------------------------------
 
 N = length(met %in% EC_classes$EcoCycID) # total marked elements
 
@@ -520,7 +523,7 @@ hyper_classes = function(gene_list){
   return(enrich)
 }
 
-
+## perform enrichment ----------
 # BW
 enrich.BW.up = hyper_classes(sig.met.BW.up)
 enrich.BW.down = hyper_classes(sig.met.BW.down)
@@ -534,12 +537,18 @@ enrich.TM.up = hyper_classes(sig.met.TM.up)
 enrich.TM.down = hyper_classes(sig.met.TM.down)
 
 
-enrich.BW.up      = data.frame(enrich.BW.up     ) %>% mutate(Class = rownames(.), Direction =   'up', Strain =   'BW');        
-enrich.BW.down    = data.frame(enrich.BW.down   ) %>% mutate(Class = rownames(.), Direction = 'down', Strain =   'BW');       
-enrich.pyrE.up    = data.frame(enrich.pyrE.up   ) %>% mutate(Class = rownames(.), Direction =   'up', Strain = 'pyrE');       
-enrich.pyrE.down  = data.frame(enrich.pyrE.down ) %>% mutate(Class = rownames(.), Direction = 'down', Strain = 'pyrE');       
-enrich.TM.up      = data.frame(enrich.TM.up     ) %>% mutate(Class = rownames(.), Direction =   'up', Strain =   'TM');       
-enrich.TM.down    = data.frame(enrich.TM.down   ) %>% mutate(Class = rownames(.), Direction = 'down', Strain =   'TM');       
+enrich.BW.up      = data.frame(enrich.BW.up     ) %>% 
+  mutate(Class = rownames(.), Direction =   'up', Strain =   'BW');        
+enrich.BW.down    = data.frame(enrich.BW.down   ) %>% 
+  mutate(Class = rownames(.), Direction = 'down', Strain =   'BW');       
+enrich.pyrE.up    = data.frame(enrich.pyrE.up   ) %>% 
+  mutate(Class = rownames(.), Direction =   'up', Strain = 'pyrE');       
+enrich.pyrE.down  = data.frame(enrich.pyrE.down ) %>% 
+  mutate(Class = rownames(.), Direction = 'down', Strain = 'pyrE');       
+enrich.TM.up      = data.frame(enrich.TM.up     ) %>% 
+  mutate(Class = rownames(.), Direction =   'up', Strain =   'TM');       
+enrich.TM.down    = data.frame(enrich.TM.down   ) %>% 
+  mutate(Class = rownames(.), Direction = 'down', Strain =   'TM');       
 
 
 names(enrich.BW.up)[1] = 'p.value'
@@ -569,12 +578,203 @@ enrlbls = c('N.S.','<0.05','<0.01','<0.001','<0.0001')
 enrcols = colorRampPalette(c("gray90", "steelblue1", "blue4"))(n = 6)
 
 p.theme = theme(axis.ticks = element_blank(), panel.border = element_blank(), 
-                panel.background = element_blank(), panel.grid.minor = element_blank(), 
-                panel.grid.major = element_blank(), axis.line = element_line(colour = NA), 
-                axis.line.x = element_line(colour = NA), axis.line.y = element_line(colour = NA), 
-                strip.text = element_text(colour = "black", face = "bold", 
-                                          size = 10), axis.text.x = element_text(face = "bold", 
-                                                                                 colour = "black", size = 10, angle = 90, hjust = 1))
+                panel.background = element_blank(), 
+                panel.grid.minor = element_blank(), 
+                panel.grid.major = element_blank(), 
+                axis.line = element_line(colour = NA), 
+                axis.line.x = element_line(colour = NA), 
+                axis.line.y = element_line(colour = NA), 
+                strip.text = element_text(colour = "black", 
+                                          face = "bold", 
+                                          size = 10),
+                axis.text.x = element_text(face = "bold", 
+                                           colour = "black", size = 10, 
+                                           angle = 90, hjust = 1))
+
+
+# plot enrichment p-values
+df %>% 
+  mutate(p.value = p.value + 0.00000001,
+         logFDR = ifelse(-log10(p.value) < 0, 0, -log10(p.value)),
+         logFDRbin = cut(logFDR, breaks = enrbrks, 
+                         labels = enrlbls, right = FALSE),
+         Class = factor(Class, levels = sort(classes, decreasing = T)),
+         Direction = factor(Direction, 
+                            levels = sort(direct, decreasing = T))) %>%
+  ggplot(aes(x = Direction, y = Class)) +
+  geom_tile(aes(fill = logFDRbin)) +
+  scale_fill_manual(values = enrcols) + 
+  facet_wrap(~Strain) +
+  p.theme
+
+
+## Worm side ---------------------------------------
+
+N = length(met %in% EC_classes$EcoCycID) # total marked elements
+
+classes = EC_classes %>% 
+  filter(Plate != 'extra') %>%
+  distinct(EcoCyc_Classes) %>% 
+  pull(EcoCyc_Classes)
+
+
+
+
+sig.w.BW = screen_stats %>% 
+  filter(Metabolite != 'Negative Control', Contrast == "BW_5FU", 
+         Median == 4) %>% pull(EcoCycID)
+sig.w.pyrE = screen_stats %>% 
+  filter(Metabolite != 'Negative Control', Contrast == "pyrE_5FU", 
+         Median == 4) %>% pull(EcoCycID)
+sig.w.TM = screen_stats %>% 
+  filter(Metabolite != 'Negative Control', Contrast == "TM_5FU", 
+         Median == 4) %>% pull(EcoCycID)
+
+
+## helper function 
+hyper_classes = function(gene_list){
+  classes = unique(EC_classes$EcoCyc_Classes)
+  enrich = c()
+  for (class in classes){
+    class.met = EC_classes %>% filter(EcoCyc_Classes == class) %>% pull(EcoCycID) 
+    m = length(class.met)
+    n = N - m
+    k = length(gene_list)
+    x = length(class.met[class.met %in% gene_list])
+    fit = phyper(q = x-1, m = m, n = n, k = k, lower.tail = FALSE)
+    enrich = c(enrich, fit)
+  }
+  enrich = p.adjust(enrich, method = 'fdr')
+  names(enrich) = classes
+  enrich = enrich[enrich < 0.05]
+  return(enrich)
+}
+
+
+
+enrich.BW = hyper_classes(sig.w.BW)
+enrich.pyrE = hyper_classes(sig.w.pyrE)
+enrich.TM = hyper_classes(sig.w.TM)
+
+
+
+enrich.BW      = data.frame(enrich.BW     ) %>% 
+  mutate(Class = rownames(.), Strain =   'BW');        
+enrich.pyrE    = data.frame(enrich.pyrE   ) %>% 
+  mutate(Class = rownames(.), Strain = 'pyrE');       
+enrich.TM      = data.frame(enrich.TM     ) %>% 
+  mutate(Class = rownames(.), Strain =   'TM');       
+
+
+names(enrich.BW)[1] = 'p.value'
+names(enrich.pyrE)[1] = 'p.value'
+names(enrich.TM)[1] = 'p.value'
+
+worm.enrich = rbind(enrich.BW, enrich.pyrE, enrich.TM)
+
+# lets build a new dataframe that has all the info we need for plotting
+classes = sort(unique(worm.enrich$Class))
+
+df = expand.grid(Strain = c('BW', 'pyrE', 'TM'),
+                 Class = classes)
+
+df = left_join(df, worm.enrich) %>%
+  mutate(p.value = replace_na(p.value, 1))
+
+
+# plot enrichment p-values
+df %>% 
+  mutate(p.value = p.value + 0.00000001,
+         logFDR = ifelse(-log10(p.value) < 0, 0, -log10(p.value)),
+         logFDRbin = cut(logFDR, breaks = enrbrks, 
+                         labels = enrlbls, right = FALSE),
+         Class = factor(Class, levels = sort(classes, decreasing = T))) %>%
+  ggplot(aes(x = Strain, y = Class)) +
+  geom_tile(aes(fill = logFDRbin)) +
+  scale_fill_manual(values = enrcols) + 
+  p.theme
+
+
+
+
+# KEGG Pathways --------------------------------------------------------
+
+
+## Bacterial side ------------------------------------------------------
+
+# helper function
+classes = unique(EC_path$Pathways)
+classes = classes[-16] # remove an NA
+classes = classes[-89]
+
+hyper_path = function(gene_list){
+  enrich = c()
+  for (class in classes){
+    class.met = EC_path %>% filter(Pathways == class) %>% pull(EcoCycID) 
+    m = length(class.met)
+    n = N - m
+    k = length(gene_list)
+    x = length(class.met[class.met %in% gene_list])
+    fit = phyper(q = x-1, m = m, n = n, k = k, lower.tail = FALSE)
+    enrich = c(enrich, fit)
+  }
+  enrich = p.adjust(enrich, method = 'fdr')
+  names(enrich) = classes
+  enrich = enrich[enrich < 0.05]
+  return(enrich)
+}
+
+
+## perform enrichment ----------
+# BW
+enrich.BW.up = hyper_path(sig.met.BW.up)
+enrich.BW.down = hyper_path(sig.met.BW.down)
+
+# pyrE
+enrich.pyrE.up = hyper_path(sig.met.pyrE.up)
+enrich.pyrE.down = hyper_path(sig.met.pyrE.down)
+
+# TM
+enrich.TM.up = hyper_path(sig.met.TM.up)
+enrich.TM.down = hyper_path(sig.met.TM.down)
+
+# let's workout the results from each enrichment
+
+enrich.BW.up      = data.frame(enrich.BW.up     ) %>% 
+  mutate(Class = rownames(.), Direction =   'up', Strain =   'BW');        
+enrich.BW.down    = data.frame(enrich.BW.down   ) %>% 
+  mutate(Class = rownames(.), Direction = 'down', Strain =   'BW');       
+enrich.pyrE.up    = data.frame(enrich.pyrE.up   ) %>% 
+  mutate(Class = rownames(.), Direction =   'up', Strain = 'pyrE');       
+enrich.pyrE.down  = data.frame(enrich.pyrE.down ) %>% 
+  mutate(Class = rownames(.), Direction = 'down', Strain = 'pyrE');       
+enrich.TM.up      = data.frame(enrich.TM.up     ) %>% 
+  mutate(Class = rownames(.), Direction =   'up', Strain =   'TM');       
+enrich.TM.down    = data.frame(enrich.TM.down   ) %>% 
+  mutate(Class = rownames(.), Direction = 'down', Strain =   'TM');       
+
+
+names(enrich.BW.up)[1] = 'p.value'
+names(enrich.BW.down)[1] = 'p.value'
+names(enrich.pyrE.up)[1] = 'p.value'
+names(enrich.pyrE.down)[1] = 'p.value'
+names(enrich.TM.up)[1] = 'p.value'
+names(enrich.TM.down)[1] = 'p.value'
+
+
+bac.enrich = rbind(enrich.BW.up, enrich.BW.down, 
+                   enrich.pyrE.up, enrich.pyrE.down)
+
+# lets build a new dataframe that has all the info we need for plotting
+classes = sort(unique(bac.enrich$Class))
+direct = c('up', 'down')
+
+df = expand.grid(Strain = c('BW', 'pyrE', 'TM'),
+                 Class = classes,
+                 Direction = c('up', 'down'))
+
+df = left_join(df, bac.enrich) %>%
+  mutate(p.value = replace_na(p.value, 1))
 
 
 # plot enrichment p-values
@@ -588,8 +788,69 @@ df %>%
   geom_tile(aes(fill = logFDRbin)) +
   scale_fill_manual(values = enrcols) + 
   facet_wrap(~Strain) +
-  # labs(fill = 'FDR') + 
   p.theme
+
+
+
+
+
+
+## Worm side ---------------------------------------
+
+# N = length(met %in% EC_classes$EcoCycID) # total marked elements
+
+classes = unique(EC_path$Pathways)
+
+enrich.BW = hyper_path(sig.w.BW)
+enrich.pyrE = hyper_path(sig.w.pyrE)
+enrich.TM = hyper_path(sig.w.TM)
+
+
+
+enrich.BW      = data.frame(enrich.BW     ) %>% 
+  mutate(Class = rownames(.), Strain =   'BW');        
+enrich.pyrE    = data.frame(enrich.pyrE   ) %>% 
+  mutate(Class = rownames(.), Strain = 'pyrE');       
+enrich.TM      = data.frame(enrich.TM     ) %>% 
+  mutate(Class = rownames(.), Strain =   'TM');       
+
+
+names(enrich.BW)[1] = 'p.value'
+names(enrich.pyrE)[1] = 'p.value'
+names(enrich.TM)[1] = 'p.value'
+
+worm.enrich = rbind(enrich.BW, enrich.pyrE, enrich.TM)
+
+# lets build a new dataframe that has all the info we need for plotting
+classes = sort(unique(worm.enrich$Class))
+
+df = expand.grid(Strain = c('BW', 'pyrE', 'TM'),
+                 Class = classes)
+
+df = left_join(df, worm.enrich) %>%
+  mutate(p.value = replace_na(p.value, 1))
+
+
+# plot enrichment p-values
+df %>% 
+  mutate(p.value = p.value + 0.00000001,
+         logFDR = ifelse(-log10(p.value) < 0, 0, -log10(p.value)),
+         logFDRbin = cut(logFDR, breaks = enrbrks, 
+                         labels = enrlbls, right = FALSE),
+         Class = factor(Class, levels = sort(classes, decreasing = T))) %>%
+  ggplot(aes(x = Strain, y = Class)) +
+  geom_tile(aes(fill = logFDRbin)) +
+  scale_fill_manual(values = enrcols) + 
+  p.theme
+
+
+
+
+
+
+
+
+
 
 
 
