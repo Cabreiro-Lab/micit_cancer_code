@@ -160,4 +160,51 @@ gene_drug %>%
 
 
 
+# double mutant scatterplot -----------------------------------------------
+
+
+
+dmut = read_excel("data/Table S1.xlsx", sheet = "gltA_prpB_mutants",
+                       skip = 1)
+
+
+dmut %>% 
+  select(Supplement, Supplement_mM, Genes, BW_norm, n_genes) %>%
+  unite(Supp, Supplement, Supplement_mM) %>%
+  spread(Supp, BW_norm) %>%
+  ggplot(aes(x = Glucose_0, y = Glucose_10)) + 
+  geom_hline(yintercept = 0, colour = 'grey30') +
+  geom_vline(xintercept = 0, colour = 'grey30') +
+  geom_point(aes(fill = n_genes),
+             shape = 21,
+             position = pos, 
+             size = 3, 
+             alpha = 0.8 ) + 
+  coord_cartesian(ylim = c(-1,1)) + # for drug == 0
+  geom_text_repel(aes(label = ifelse(!Genes %in% c('Δglta ΔprpB','ΔgltA'),
+                                     as.character(Genes), '')),
+                  position = pos,
+                  max.overlaps = Inf,
+                  colour = 'black', size = 2.5) +
+  geom_text_repel(aes(label = ifelse(Genes %in% c('Δglta ΔprpB','ΔgltA'), 
+                                     as.character(Genes), '')), 
+                  position = pos, colour = 'red', 
+                  max.overlaps = Inf,
+                  size = 7, box.padding = 2.5) +
+  scale_color_manual(values = c('#B2108B', '#1C8F01')) +
+  labs(
+    x = '_C. elegans_ phenotype normalised scores',
+    y = '_C. elegans_ phenotype normalised scores (with pyruvate)'
+  ) +
+  theme_cowplot(17) +
+  theme(legend.text = element_text(size = 6),
+        text = element_text(family = "Arial"),
+        axis.title.y = ggtext::element_markdown(),
+        axis.title.x = ggtext::element_markdown()) + 
+  background_grid() +
+  ylim(-0.6, 1) +
+  guides(fill = guide_legend(
+    title = 'Mutant type',
+    override.aes = list(size = 4))) # make lengend points larger
+
 
