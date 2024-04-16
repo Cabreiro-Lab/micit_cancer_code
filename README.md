@@ -1,7 +1,6 @@
 # Chemotherapy Modulation by a Cancer-Associated Microbiota Metabolite
 
-In this repository, we provide the code and data used in the manuscript "Chemotherapy Modulation by a Cancer-Associated Microbiota Metabolite" by **Martinez-Martinez, V. Peres et al.**.
-
+In this repository, we provide the code and data used in the manuscript "Chemotherapy Modulation by a Cancer-Associated Microbiota Metabolite" by ***Martinez-Martinez, V. Peres _et al._***
 
 ## Abstract
 
