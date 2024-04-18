@@ -8,7 +8,8 @@ Coming soon...
 
 ## Data
 
-The data used in this study is available in the `data` folder. The data is organized as follows:
+The data used in this study is available in the `data` folder. This data is mostly present in the Supplemental Tables but also here for convenience. You may want to also download the data uploaded to Zenodo, but it is not necessary for the code to run. Additional tables are provided here to perform some of the analyses.
+The data is organized as follows:
 
 **KEGGEcoCycClass.csv**: List of KEGG and EcoCyc pathways and their corresponding classes for the nutrients in the Biolog plates.
 
