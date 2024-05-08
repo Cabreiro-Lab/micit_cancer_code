@@ -27,4 +27,14 @@ The code used in this study is available in the `code` folder. The code is organ
 
 **cancer_cell_viability.R**: R script to generate the cancer cell viability in Figure 5 and cell growth in Figure S5.
 
+**Biolog_cancer_cells.R**: R script to generate the original analysis for the Biolog data and the chemical space multivariate analysis. *Legacy code*.
+
+**HCT116_wt_p53.R**: R script to generate the HCT116 wild-type and p53 knockout cell line analysis. *Legacy code*.
+
+**isomer_analysis.R**: R script to generate the isomer analysis in Figure 7. *Legacy code*.
+
+**proteomics_5FU_micit.R**: R script to generate the proteomics analysis in Figure 7. *Legacy code*.
+
+**RNA_seq_CRC.R**: R script to generate the RNA-seq analysis in Figure 6. *Legacy code*.
+
 NOTE: Figures may not look as in the final version as those were further edited in Adobe Illustrator for publication purposes. The code is provided as is, and may require additional dependencies to run.

@@ -3,3 +3,5 @@ data/*
 # RStudio files
 .Rproj.user/
 *.Rproj
+.Rdata
+.Rhistory
