@@ -37,6 +37,15 @@ The code used in this study is available in the `code` folder. The code is organ
 
 **phylo_tree.R**: R script to generate the phylogenetic tree with worm and bacterial phenotypes from Figure 1. 
 
+**RNA_seq_paper_graphs.R**: R script that represents the enrichment and volcano plots from the RNA seq data from CRC cell lines in Figure 6. 
+
+**hyper_mito_analysis.R**: R script that generates and analyses the data from the hyper7 mitochondrial experiments from Figure 6. 
+
+
+### Legacy code
+
+The code under this section was developed to analyse the data presented in the paper and it is unpolished. Use with caution
+
 **Biolog_cancer_cells.R**: R script to generate the original analysis for the Biolog data and the chemical space multivariate analysis. *Legacy code*.
 
 **HCT116_wt_p53.R**: R script to generate the HCT116 wild-type and p53 knockout cell line analysis. *Legacy code*.
@@ -45,6 +54,17 @@ The code used in this study is available in the `code` folder. The code is organ
 
 **proteomics_5FU_micit.R**: R script to generate the proteomics analysis in Figure 7. *Legacy code*.
 
-**RNA_seq_CRC.R**: R script to generate the RNA-seq analysis in Figure 6. *Legacy code*.
+**RNA_seq_CRC_1.R**: Full and unpolished R script to generate the RNA-seq analysis for cell lines: HCT116, DLD1, SW948, LoVo. *Legacy code*. For the full data analysis, 
+
+**RNA_seq_CRC_2.R**: Full and unpolished R script to generate the RNA-seq analysis for cell lines: HT29, SKCO1 and SW1417. *Legacy code*.
+
+
+## Other codes
+
+**string_api_MULTI.py**: Python code that generates gene/protein enrichment through the API of String DB. The original code repo can be found in: https://github.com/dmartimarti/STRINGDB_analyser
+
+**chem_spacer.py**: Python code that generates molecular fingerprints from SMILE strings and plots t-SNE and UMAP from it's distribution. The original code repo can be found in: https://github.com/Cabreiro-Lab/chem_space_analyser
+
+
 
 NOTE: Figures may not look as in the final version as those were further edited in Adobe Illustrator for publication purposes. The code is provided as is, and may require additional dependencies to run.

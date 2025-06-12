@@ -18,7 +18,7 @@ theme_set(theme_cowplot(15))
 # cell viability heatmap --------------------------------------------------
 
 ## read the data 
-cell_viab = read_excel("data/Table S5.xlsx", 
+cell_viab = read_excel("supplementary_tables/Table S5.xlsx", 
                      sheet = "cell_viability")
 
 
@@ -26,7 +26,7 @@ cell_viab = read_excel("data/Table S5.xlsx",
 
 
 # remove MDA-MB-453 because it didn't grow well
-cell_metadata = read_xlsx("data/Table S5.xlsx", 
+cell_metadata = read_xlsx("supplementary_tables/Table S5.xlsx", 
                           sheet = "cell_line_metadata") %>% 
   rename(cell = `Cell line`) %>% 
   mutate(cell = str_replace(cell, "CCD841 CoN", "CCD841_CoN")) # a point mutation in a name
@@ -114,7 +114,7 @@ cell_matrix %>%
 
 
 
-cell_growth = read_excel("data/Table S5.xlsx", 
+cell_growth = read_excel("supplementary_tables/Table S5.xlsx", 
                        sheet = "cell_growth")
 
 

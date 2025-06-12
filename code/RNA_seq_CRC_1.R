@@ -702,7 +702,7 @@ names(pca_prep)
 
 pca_prep
 
-sdev = pca_prep$steps[[1]]$res$sdev
+sdev = pca_prep$steps[[4]]$res$sdev
 percent_variation =  100 * round(sdev^2 / sum(sdev^2),4)
 
 
@@ -764,9 +764,9 @@ rld_table = samples %>% select(Name, Cell_line, Replicate, Sample) %>%
   left_join(rld_table) %>% as_tibble() %>% 
   select(-Name) 
 
-# remove SW948 cell line
-rld_table = rld_table %>% 
-  filter(Cell_line != "SW948")
+# # remove SW948 cell line
+# rld_table = rld_table %>% 
+#   filter(Cell_line != "SW948")
 
 
 
@@ -793,10 +793,12 @@ pca_fit %>%
     x = glue("PC1 ({eigens[1,]$percent}%)"),
     y = glue("PC2 ({eigens[2,]$percent}%)")
   ) +
-  theme_half_open(12) +
-  background_grid()
+  theme_half_open(12, font_family = "Arial") 
+# +
+#   background_grid()
 
-ggsave(here('summary', 'PCA_noSW.pdf'), height = 6, width = 7)
+# ggsave(here('summary', 'PCA_noSW.pdf'), height = 6, width = 7)
+ggsave(here('summary', 'PCA_REVISION.pdf'), height = 6, width = 7)
 
 
 #### UMAP ####
@@ -1709,6 +1711,34 @@ ggsave(here('summary', 'tf_activity.pdf'),
        height = 8, width = 10)
 
 
+
+tidy_tf %>% 
+  left_join(tf_hct_stats) %>% 
+  filter(tf %in% sig_tf) %>% 
+  arrange(desc(abs(mean_activity))) %>% 
+  mutate(Direction = factor(Direction, levels = c('Up', 'Down'))) %>% 
+  # filter(tf %in% unique(head(tidy_tf$tf, 25))) %>%
+  # drop_na() %>% 
+  ggplot(aes(x = fct_reorder(tf, p), y = mean_activity)) +
+  geom_errorbar(aes(ymax = mean_activity + sd_activity, 
+                    ymin = mean_activity - sd_activity),
+                width = 0.1, color = 'grey70') +
+  geom_point(aes(color = Condition, shape = Condition), 
+             size = 5) +
+  geom_text(aes(label = p.stars),
+            y = 10.5) +
+  theme_cowplot(15) +
+  labs(x = 'Regulons',
+       y = 'Mean activity (+- std)') +
+  facet_grid(~Direction, scales = 'free_x', space = 'free') +
+  scale_color_manual(values = c('#E6454E', '#1F993D')) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) 
+
+ggsave(here('summary', 'tf_activity_complete_HCT116.pdf'),
+       height = 8, width = 30)
+
+
+
 tidy_tf %>% 
   left_join(tf_hct_stats) %>% 
   filter(tf %in% sig_tf) %>% 
@@ -2165,7 +2195,7 @@ sw_tf_tidy %>%
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5))
 
 ggsave(here('summary', 'tf_activity_complete_SW948.pdf'),
-       height = 8, width = 30)
+       height = 8, width = 20)
 
 
 
@@ -2218,10 +2248,10 @@ tf_stats = tf_total %>%
   group_by(tf, Cell, confidence) %>% 
   rstatix::t_test(activity ~ Condition, 
                   p.adjust.method = "fdr",
-                  ref.group = 'C') %>% 
+                  detailed = TRUE) %>% 
   mutate(p.stars = gtools::stars.pval(p),
-         Direction = case_when(statistic < 0 ~ 'Up',
-                               statistic > 0 ~ 'Down',
+         Direction = case_when(estimate < 0 ~ 'Up',
+                               estimate > 0 ~ 'Down',
                                TRUE ~ 'Neutral'))
 
 # get significant tf
@@ -2230,6 +2260,10 @@ sig_tf = tf_stats  %>%
   pull(tf)
 
 
+tf_stats %>% 
+  filter(p < 0.05) %>% 
+  write_csv("summary/tf_stats_sig_ALL.csv")
+
 
 
 
@@ -2237,12 +2271,17 @@ sig_tf = tf_stats  %>%
 
 # print selection of TFs
 
-tidy_tf %>% 
+tidy_tf_w_stats = tidy_tf %>% 
   left_join(tf_stats) %>% 
-  filter(tf %in% sig_tf) %>% 
-  arrange(desc(abs(mean_activity))) %>% 
-  mutate(Direction = factor(Direction, levels = c('Up', 'Down'))) %>% 
-  filter(tf %in% unique(head(tidy_tf$tf, 35))) %>%
+  # filter(tf %in% sig_tf) %>% 
+  arrange(desc(abs(mean_activity))) 
+
+tf_selection = tidy_tf_w_stats %>% slice_head(n = 40) %>% distinct(tf) %>% pull(tf)
+
+length(tf_selection)
+
+tidy_tf_w_stats %>% 
+  filter(tf %in% tf_selection ) %>%
   ggplot(aes(x = fct_reorder(tf, p), y = mean_activity)) +
   geom_errorbar(aes(ymax = mean_activity + sd_activity, 
                     ymin = mean_activity - sd_activity),
@@ -2259,8 +2298,8 @@ tidy_tf %>%
   scale_color_manual(values = c('#E6454E', '#1F993D')) +
   theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) 
 
-ggsave(here('summary', 'tf_activity_ALL.pdf'),
-       height = 8, width = 10)
+ggsave(here('summary', 'tf_activity_ALL_top30.pdf'),
+       height = 8, width = 23)
 
 
 
@@ -2290,6 +2329,246 @@ ggsave(here('summary', 'tf_activity_complete_ALL.pdf'),
 
 
 
+#### shared TFs in HCT, LoVo and DLD1 -----------
+
+tf_shared_2_down = tidy_tf %>% 
+  left_join(tf_stats) %>% 
+  filter(Cell != "SW948") %>% 
+  filter(p < 0.05) %>%
+  filter(Direction == "Down") %>%
+  count(tf) %>% 
+  mutate(n = n/2) %>% 
+  filter(n >= 2) %>% 
+  pull(tf)
+
+tidy_tf_w_stats %>% 
+  filter(Cell != "SW948") %>% 
+  filter(tf %in% tf_shared_2_down ) %>%
+  filter(Direction == "Down") %>% 
+  ggplot(aes(x = fct_reorder(tf, estimate), y = mean_activity)) +
+  geom_errorbar(aes(ymax = mean_activity + sd_activity, 
+                    ymin = mean_activity - sd_activity),
+                width = 0.1, color = 'grey70') +
+  geom_point(aes(color = Condition, shape = Condition), 
+             size = 5) +
+  geom_text(aes(label = p.stars),
+            y = 5, angle = 90) +
+  theme_cowplot(15) +
+  background_grid() +
+  labs(x = 'Regulons',
+       y = 'Mean activity (+- std)') +
+  # facet_grid(~Direction*Cell, scales = 'free_x', space = 'free') +
+  facet_wrap(~Direction*Cell, scales='free_x', ncol = 1) +
+  scale_color_manual(values = c('#E6454E', '#1F993D')) +
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5)) 
+
+ggsave(here('summary', 'tf_activity_shared_DOWN.pdf'),
+       height = 13, width = 15)
+
+
+##### shared UP -------------------
+
+tf_shared_2_up = tidy_tf %>% 
+  left_join(tf_stats) %>% 
+  filter(Cell != "SW948") %>% 
+  filter(p < 0.05) %>%
+  filter(Direction == "Up") %>%
+  count(tf) %>% 
+  mutate(n = n/2) %>% 
+  filter(n >= 2) %>% 
+  pull(tf)
+
+tidy_tf_w_stats %>% 
+  filter(Cell != "SW948") %>% 
+  filter(tf %in% tf_shared_2_up ) %>%
+  filter(Direction == "Up") %>% 
+  ggplot(aes(x = fct_reorder(tf, estimate), y = mean_activity)) +
+  geom_errorbar(aes(ymax = mean_activity + sd_activity, 
+                    ymin = mean_activity - sd_activity),
+                width = 0.1, color = 'grey70') +
+  geom_point(aes(color = Condition, shape = Condition), 
+             size = 5) +
+  geom_text(aes(label = p.stars),
+            y = 5, angle = 90) +
+  theme_cowplot(15) +
+  background_grid() +
+  labs(x = 'Regulons',
+       y = 'Mean activity (+- std)') +
+  # facet_grid(~Direction*Cell, scales = 'free_x', space = 'free') +
+  facet_wrap(~Direction*Cell, scales='free_x', ncol = 1) +
+  scale_color_manual(values = c('#E6454E', '#1F993D')) +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5)) 
+
+ggsave(here('summary', 'tf_activity_shared_UP.pdf'),
+       height = 12, width = 15)
+
+
+
+
+# venn diagram of TF ------------------------------------------------------
+
+#### UP -----------
+library(VennDiagram)
+
+tf_hct_up = tidy_tf %>% 
+  left_join(tf_stats) %>% 
+  filter(Cell == "HCT116") %>% 
+  filter(p < 0.05, Direction == "Up") %>% 
+  pull(tf)
+
+tf_lovo_up = tidy_tf %>% 
+  left_join(tf_stats) %>% 
+  filter(Cell == "LoVo") %>% 
+  filter(p < 0.05, Direction == "Up") %>% 
+  pull(tf)
+
+tf_dld_up = tidy_tf %>% 
+  left_join(tf_stats) %>% 
+  filter(Cell == "DLD1") %>% 
+  filter(p < 0.05, Direction == "Up") %>% 
+  pull(tf)
+
+myCol <- brewer.pal(3, "Pastel2")
+
+venn.diagram(
+  x = list(tf_hct_up, tf_lovo_up, tf_dld_up),
+  category.names = c("HCT116" , "LoVo" , "DLD-1"),
+  filename = 'TF_Venn_UP.png',
+  output=TRUE,
+  
+  # Output features
+  imagetype="png" ,
+  height = 780 , 
+  width = 780 , 
+  resolution = 300,
+  compression = "lzw",
+  
+  # Circles
+  lwd = 2,
+  lty = 'blank',
+  fill = myCol,
+  
+  # Numbers
+  cex = .6,
+  fontface = "bold",
+  fontfamily = "sans",
+  
+  # Set names
+  cat.cex = 0.6,
+  cat.fontface = "bold",
+  cat.default.pos = "outer",
+  cat.pos = c(-27, 27, 135),
+  cat.dist = c(0.055, 0.055, 0.085),
+  cat.fontfamily = "sans",
+  rotation = 1
+)
+
+# create a tbl with tfs that are shared
+
+# Combine all TFs and their source
+all_tfs <- unique(c(tf_hct_up, tf_lovo_up, tf_dld_up))
+
+tf_table <- tibble(
+  TF = all_tfs,
+  HCT116 = all_tfs %in% tf_hct_up,
+  LoVo = all_tfs %in% tf_lovo_up,
+  DLD1 = all_tfs %in% tf_dld_up
+)
+
+# Convert logical to presence/absence indicator (optional)
+tf_table <- tf_table %>%
+  mutate(across(HCT116:DLD1, ~ ifelse(.x, "Yes", "No")))  # Or 1/0
+
+
+# Arrange for better readability (optional)
+tf_table <- tf_table %>%
+  arrange(TF)
+
+tf_table %>% 
+  write.xlsx("summary/TF_shared_UP.xlsx")
+
+
+
+
+#### DOWN ---------
+
+
+tf_hct_down = tidy_tf %>% 
+  left_join(tf_stats) %>% 
+  filter(Cell == "HCT116") %>% 
+  filter(p < 0.05, Direction == "Down") %>% 
+  pull(tf)
+
+tf_lovo_down = tidy_tf %>% 
+  left_join(tf_stats) %>% 
+  filter(Cell == "LoVo") %>% 
+  filter(p < 0.05, Direction == "Down") %>% 
+  pull(tf)
+
+tf_dld_down = tidy_tf %>% 
+  left_join(tf_stats) %>% 
+  filter(Cell == "DLD1") %>% 
+  filter(p < 0.05, Direction == "Down") %>% 
+  pull(tf)
+
+myCol <- brewer.pal(3, "Pastel2")
+
+venn.diagram(
+  x = list(tf_hct_down, tf_lovo_down, tf_dld_down),
+  category.names = c("HCT116" , "LoVo" , "DLD-1"),
+  filename = 'TF_Venn_DOWN.png',
+  output=TRUE,
+  
+  # Output features
+  imagetype="png" ,
+  height = 780 , 
+  width = 780 , 
+  resolution = 300,
+  compression = "lzw",
+  
+  # Circles
+  lwd = 2,
+  lty = 'blank',
+  fill = myCol,
+  
+  # Numbers
+  cex = .6,
+  fontface = "bold",
+  fontfamily = "sans",
+  
+  # Set names
+  cat.cex = 0.6,
+  cat.fontface = "bold",
+  cat.default.pos = "outer",
+  cat.pos = c(-27, 27, 135),
+  cat.dist = c(0.055, 0.055, 0.085),
+  cat.fontfamily = "sans",
+  rotation = 1
+)
+
+# create a tbl with tfs that are shared
+
+# Combine all TFs and their source
+all_tfs <- unique(c(tf_hct_down, tf_lovo_down, tf_dld_down))
+
+tf_table <- tibble(
+  TF = all_tfs,
+  HCT116 = all_tfs %in% tf_hct_down,
+  LoVo = all_tfs %in% tf_lovo_down,
+  DLD1 = all_tfs %in% tf_dld_down
+)
+
+# Convert logical to presence/absence indicator (optional)
+tf_table <- tf_table %>%
+  mutate(across(HCT116:DLD1, ~ ifelse(.x, "Yes", "No")))  # Or 1/0
+
+
+# Arrange for better readability (optional)
+tf_table <- tf_table %>%
+  arrange(TF)
+
+tf_table %>% 
+  write.xlsx("summary/TF_shared_DOWN.xlsx")
 
 
 
@@ -2642,6 +2921,57 @@ small_merge_cats %>%
 ggsave('summary/GSEA/paper_heatmap_enrich_KEGG_SW.pdf',
        width = 8, height = 6)  
 
+
+# ENRICHMENT REVISION VARIANT --------------------------------------------------------
+
+
+
+# selected_descriptions = merge_cats %>%
+#   filter(cell %in% c("DLD-1", "HCT 116")) %>% 
+#   group_by(description) %>% 
+#   count() %>% 
+#   filter(n == 2) %>% 
+#   pull(description)
+
+
+small_merge_cats = merge_cats %>% 
+  filter(description %in% selected_descriptions) %>% 
+  filter(cell %in% c("DLD-1", "HCT 116", "LoVo", "SW948"))
+
+
+small_merge_cats %>% 
+  write_csv("summary/GSEA/small_enrich_paper.csv")
+
+small_merge_cats = read_csv("summary/GSEA/small_enrich_paper.csv")
+
+small_merge_cats %>% 
+  mutate(cell = factor(cell, levels = c("HCT 116", "DLD-1", "LoVo", "SW948"))) %>% 
+  mutate(FDR = as.factor(FDR)) %>% 
+  ggplot(aes(y = description, x = direction ,fill = FDR)) + 
+  geom_tile() +
+  scale_fill_manual(values = c('#2432FF',
+                               '#616BFF',
+                               '#A3A9FF',
+                               '#FFFFFF')) +
+  labs(
+    x = 'Regulation',
+    y = 'KEGG Terms'
+  ) +
+  scale_y_discrete(limits = rev) +
+  facet_wrap(~cell, ncol = 4) +
+  theme_cowplot(15, font_family = "Arial") +
+  panel_border() +
+  theme(
+    strip.text = element_text(size = 15),
+    axis.text.y = element_markdown(size = 12, lineheight = 0.6)
+  ) +
+  panel_border(color = 'black', size = 0.5) 
+
+
+ggsave('summary/GSEA/paper_heatmap_enrich_KEGG_SW.pdf',
+       width = 8, height = 6)  
+ggsave('summary/GSEA/paper_heatmap_enrich_KEGG_REVISION.pdf',
+       width = 9, height = 6)  
 
 
 
