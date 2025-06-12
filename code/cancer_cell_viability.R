@@ -61,7 +61,7 @@ auc_viab_stats = cell_viab %>%
   mutate(Micit_mM = factor(Micit_mM)) %>% 
   group_by(cell) %>% 
   nest() %>% 
-  mutate( model = map(data, ~aov(Viability~Micit_mM, data = .x)) ,
+  mutate( model = map(data, ~aov(cell_proliferation~Micit_mM, data = .x)) ,
           tukey = map(.x = model, ~TukeyHSD(.x)),
           tukey = map(tukey, tidy))  %>% 
   select(-model,-data) %>% 
@@ -85,7 +85,7 @@ auc_stats_matrix = t(auc_stats_matrix[cell_order,])
 cell_matrix = cell_viab %>% 
   filter(cell %in% cell_order) %>% 
   group_by(cell, Micit_mM) %>% 
-  summarise(mean_viab = mean(Viability)) %>% 
+  summarise(mean_viab = mean(cell_proliferation)) %>% 
   ungroup %>% 
   pivot_wider(names_from = Micit_mM, values_from = mean_viab) %>% 
   column_to_rownames("cell") %>% 

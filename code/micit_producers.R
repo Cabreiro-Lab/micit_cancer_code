@@ -18,25 +18,39 @@ theme_set(theme_cowplot(15))
 
 
 cohorts = read_excel("data/Table S4.xlsx", 
-                     sheet = "cohort_production", skip = 1)
-
-
-# stats
-cohorts_stats = cohorts %>% 
-  group_by(cohort) %>% 
-  pairwise_wilcox_test(MicitFlux ~ Group, p.adjust.method = 'fdr') %>% 
-  add_xy_position(x = "Group")
+                     sheet = "cohort_production", skip = 1) %>% 
+  mutate(Group = as.factor(Group),
+         MicitFlux = as.numeric(MicitFlux))%>% 
+  drop_na(MicitFlux)
 
 
 
-cohorts_stats$custom.label <- ifelse(cohorts_stats$p.adj <= 0.05, cohorts_stats$p.adj, "ns")
 
-
-ggboxplot(cohorts, x = "Group", y = "MicitFlux", fill = "Group") +
-  geom_jitter() +
-  facet_wrap(~cohort, scales = 'free_x') +
-  stat_pvalue_manual(cohorts_stats,label = "custom.label") 
-
+cohorts %>% 
+  ggplot(aes(x = Group, y = MicitFlux, fill = Group)) +
+  geom_boxplot(show.legend = F) +
+  geom_point(position = position_jitterdodge(jitter.width = 0.3),
+             show.legend = F) +
+  # facet_wrap(~cohort, scales = 'free_x', nrow = 1) +
+  facet_grid(~cohort, scales = "free", space = "free") +
+  scale_fill_manual(values = c(
+    "Adenocarcinoma" = "#EB403D",
+    "Adeno\r\ncarcinoma (III-IV)" = "#EB403D",
+    "Adeno\r\ncarcinoma (I-II)" = "#EB403D",
+    "Adeno\r\ncarcinoma (0)" = "#EB403D",
+    "Adeno\r\ncarcinoma (young)" = "#EB403D",
+    "Adeno\r\ncarcinoma (elderly)" = "#EB403D",
+    "Adenoma" = "#D3D93B",
+    "Healthy" = "#749DCC",
+    "Control" = "#749DCC",
+    "Healthy\r\n(Post surgery)" = "#749DCC",
+    "Healthy (young)" = "#749DCC",
+    "Healthy (elderly)" = "#749DCC"
+  )) +
+  labs(x = NULL,
+       y = "Predicted 2MiCit production (AU)") +
+  theme_cowplot(10, font_family = "Arial") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
 

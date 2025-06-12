@@ -16,11 +16,11 @@ theme_set(theme_cowplot(15))
 
 # read data from the tables
 
-gene_drug = read_excel("data/Table S1.xlsx", sheet = "gene_nutrient_screen",
+gene_drug = read_excel("supplementary_tables/Table S1.xlsx", sheet = "gene_nutrient_screen",
            skip = 1)
 
 
-ecocyc = read_csv("ecocyc_paths.csv")
+ecocyc = read_csv("other_data/ecocyc_paths.csv")
 
 # genes that have an absolute normalised effect of > 0.5
 genes2use = c("acnB","gpt","pfkA","pgi","ppk","rpiB","fbaB","guaA","rpe","talA",
@@ -164,7 +164,7 @@ gene_drug %>%
 
 
 
-dmut = read_excel("data/Table S1.xlsx", sheet = "gltA_prpB_mutants",
+dmut = read_excel("supplementary_tables/Table S1.xlsx", sheet = "gltA_prpB_mutants",
                        skip = 1)
 
 
