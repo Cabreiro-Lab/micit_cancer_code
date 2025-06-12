@@ -10,7 +10,7 @@ Understanding how the microbiota produces regulatory metabolites is of significa
 
 ## Data
 
-The data used in this study is available in the `supplementary_tables` folder. This data is mostly present in the Supplemental Tables but also here for convenience. The Zenodo repository from this article may contain some necessary data to run these scripts. Additional tables are provided here to perform some of the analyses.
+The data used in this study is available in the `supplementary_tables` folder. This data is mostly present in the Supplemental Tables but also here for convenience. The Zenodo repository (DOI:10.5281/zenodo.10973338) from this article may contain some necessary data to run these scripts. Additional tables are provided here to perform some of the analyses.
 
 The data is organized as follows:
 
@@ -41,16 +41,15 @@ The code used in this study is available in the `code` folder. The code is organ
 
 **hyper_mito_analysis.R**: R script that generates and analyses the data from the hyper7 mitochondrial experiments from Figure 6. 
 
+**drug_landscape.R**: R script to create the original analysis for the Biolog data and the chemical space multivariate analysis in Figure 7.
+
+**isomer_analysis.R**: R script to generate the isomer analysis in Figure 7.
+
 
 ### Legacy code
 
-The code under this section was developed to analyse the data presented in the paper and it is unpolished. Use with caution
+The code under this section was developed to analyse the data presented in the paper and it is unpolished. Use with caution. 
 
-**Biolog_cancer_cells.R**: R script to generate the original analysis for the Biolog data and the chemical space multivariate analysis. *Legacy code*.
-
-**HCT116_wt_p53.R**: R script to generate the HCT116 wild-type and p53 knockout cell line analysis. *Legacy code*.
-
-**isomer_analysis.R**: R script to generate the isomer analysis in Figure 7. *Legacy code*.
 
 **proteomics_5FU_micit.R**: R script to generate the proteomics analysis in Figure 7. *Legacy code*.
 
