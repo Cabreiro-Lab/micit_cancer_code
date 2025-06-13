@@ -67,3 +67,5 @@ The code under this section was developed to analyse the data presented in the p
 
 
 NOTE: Figures may not look as in the final version as those were further edited in Adobe Illustrator for publication purposes. The code is provided as is, and may require additional dependencies to run.
+
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15655665.svg)](https://doi.org/10.5281/zenodo.15655665)
